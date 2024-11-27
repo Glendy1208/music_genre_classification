@@ -35,12 +35,15 @@ Ensure that the following are installed on your system:
 1. **Clone the Repository** 
     - first create a folder for this repository clone. 
     - after that, run this command in terminal : git clone https://github.com/Glendy1208/music_genre_classification.git
-2. **Install FFmpeg**
+2. **Create folder for audio input**
+    - create a folder "static", in that folder create a folder again named "uploads".
+    - the audio input from user will store in  this folder, don't worry because the audio will automatically deleted after 1 hour.
+3. **Install FFmpeg**
     - if you use windows, you can follow this tutorial for installation  FFmpeg : https://youtu.be/JR36oH35Fgg?si=1wFsMaJXY2rrhyYS
-3. **Install Library**
+4. **Install Library**
     Run these comannd in terminal :
     - pip install flask
     - pip install librosa
     - pip install tensorflow
-4. **Run Program**
+5. **Run Program**
     - in terminal run : python app.py
