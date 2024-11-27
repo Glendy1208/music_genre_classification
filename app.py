@@ -5,6 +5,8 @@ import numpy as np
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 import pickle
+import subprocess  # Untuk menjalankan perintah FFmpeg
+import threading  # Untuk menjalankan penghapusan otomatis file setelah delay
 
 app = Flask(__name__)
 
@@ -19,6 +21,35 @@ with open('scaler.pkl', 'rb') as f:
 
 # Label genre musik
 genres = ['blues', 'classical', 'country', 'disco', 'hiphop', 'jazz', 'metal', 'pop', 'reggae', 'rock']
+
+# Fungsi untuk menghapus file setelah delay
+def delete_file_after_delay(file_path, delay=3600):
+    def delete_file():
+        try:
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"File {file_path} berhasil dihapus setelah {delay} detik.")
+        except Exception as e:
+            print(f"Gagal menghapus file {file_path}: {e}")
+
+    # Jalankan penghapusan file dalam thread baru
+    threading.Timer(delay, delete_file).start()
+
+# Fungsi untuk mengonversi MP3 ke WAV menggunakan FFmpeg
+def convert_mp3_to_wav(mp3_path):
+    wav_path = mp3_path.replace('.mp3', '.wav')  # Ubah ekstensi ke .wav
+    try:
+        # Jalankan perintah FFmpeg untuk konversi
+        subprocess.run(['ffmpeg', '-i', mp3_path, wav_path], check=True)
+        # Hapus file MP3 setelah berhasil dikonversi
+        os.remove(mp3_path)
+        return wav_path
+    except subprocess.CalledProcessError as e:
+        print(f"Error converting MP3 to WAV: {e}")
+        return None
+    except OSError as e:
+        print(f"Error deleting MP3 file: {e}")
+        return None
 
 # Fungsi untuk ekstraksi fitur dari file musik
 def extract_features(file_path):
@@ -39,6 +70,7 @@ def extract_features(file_path):
         print(f"Error extracting features: {e}")
         return None
 
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -49,28 +81,38 @@ def index():
         if file.filename == '':
             return redirect(request.url)
 
+        # Simpan file ke folder yang ditentukan
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        file.save(file_path)
+
         # Periksa format file
-        if file and file.filename.endswith(('.wav', '.mp3')):
-            # Simpan file
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(file_path)
+        if file.filename.lower().endswith('.mp3'):
+            # Konversi MP3 ke WAV
+            file_path_wav = convert_mp3_to_wav(file_path)
+            if file_path_wav is None:
+                return "Konversi MP3 ke WAV gagal. Pastikan file yang diunggah valid."
+            file_path = file_path_wav  # Gunakan file WAV untuk proses berikutnya
 
-            # Ekstraksi fitur dari file yang diunggah
-            features = extract_features(file_path)
-            if features is None:
-                return "Ekstraksi fitur gagal. Coba unggah file lain."
+        # Ekstraksi fitur dari file yang diunggah
+        features = extract_features(file_path)
+        if features is None:
+            return "Ekstraksi fitur gagal. Coba unggah file lain."
 
-            # Normalisasi fitur menggunakan scaler
-            features_scaled = scaler.transform([features])
+        # Normalisasi fitur menggunakan scaler
+        features_scaled = scaler.transform([features])
 
-            # Prediksi genre menggunakan model
-            prediction = model.predict(features_scaled)
-            predicted_genre = genres[np.argmax(prediction)]
+        # Prediksi genre menggunakan model
+        prediction = model.predict(features_scaled)
+        predicted_genre = genres[np.argmax(prediction)]
 
-            # Kembalikan hasil prediksi
-            return render_template('index.html', file_path=file_path, prediction=predicted_genre)
+        # Hapus file WAV setelah 30 detik
+        delete_file_after_delay(file_path, delay=30)
+
+        # Kembalikan hasil prediksi
+        return render_template('index.html', file_path=file_path, prediction=predicted_genre)
 
     return render_template('index.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
