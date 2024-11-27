@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Genre Classifier</title>
+</head>
+<body>
+    <h1>Music Genre Classifier</h1>
+    <form action="/" method="POST" enctype="multipart/form-data">
+        <label for="file">Upload an audio file (WAV or MP3):</label>
+        <input type="file" name="file" accept=".wav,.mp3" required>
+        <button type="submit">Upload and Classify</button>
+    </form>
+
+    {% if genre %}
+        <h2>Predicted Genre: {{ genre }}</h2>
+        <audio controls>
+            <source src="data:audio/wav;base64,{{ file_base64 }}" type="audio/wav">
+            Your browser does not support the audio element.
+        </audio>
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Genre Classification</title>
+</head>
+<body>
+    <h1>Music Genre Classification</h1>
+    <form action="/" method="post" enctype="multipart/form-data">
+        <label for="file">Upload a music file (wav/mp3):</label><br><br>
+        <input type="file" id="file" name="file" accept=".wav,.mp3" onchange="previewAudio(event)">
+        <br><br>
+        <audio id="audioPlayer" controls style="display: none;">
+            <source id="audioSource" type="audio/wav">
+        </audio>
+        <br><br>
+        <button type="submit">Submit</button>
+    </form>
+    <br>
+
+    {% if file_path %}
+    <h2>Uploaded File:</h2>
+    <audio controls>
+        <source src="{{ file_path }}" type="audio/wav">
+        Your browser does not support the audio element.
+    </audio>
+    <h2>Predicted Genre: {{ prediction }}</h2>
+    {% endif %}
+
+    <script>
+        function previewAudio(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const audioPlayer = document.getElementById('audioPlayer');
+                const audioSource = document.getElementById('audioSource');
+                audioSource.src = URL.createObjectURL(file);
+                audioPlayer.style.display = 'block';
+                audioPlayer.load();
+            }
+        }
+    </script>
+</body>
+</html>
